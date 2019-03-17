@@ -1,0 +1,171 @@
+<!doctype HTML>
+<html>
+<head>
+<script type="text/javascript">
+
+var fps=30;
+var can0;
+var ctx0;
+
+var centerx=300;
+var centery=300;
+var particles=[];
+
+var particleCount=60;
+var hue=20;
+var hueRandom=40;
+var startR=0;
+var startRRandom=-200;
+var startSize=4;
+var startSizeRandom=0;
+var moveSpeed=3;
+var moveSpeedRandom=0;
+var endR=100;
+var endRRandom=0;
+
+var rainbow=false;
+var randomAngle=false;
+var gradualFade=false;
+var fadeScale=100000;
+var followMouse=false;
+
+function Particle(a){
+	this.init=function(){
+		this.r=startR+Math.random()*startRRandom;
+		if(randomAngle){
+			this.angle=Math.random()*Math.PI*2;
+		}
+		this.size=startSize+Math.random()*startSizeRandom;
+		this.s0=this.size;
+		this.speed=Math.random()*moveSpeedRandom+moveSpeed;
+		this.endR=endR+Math.random()*endRRandom;
+		if(rainbow){
+			this.hue=this.angle*180/Math.PI;
+		}else{
+			this.hue=hue+Math.random()*hueRandom;
+		}
+		this.cx=centerx;
+		this.cy=centery;
+	}	
+	this.frame=function(){
+		for(var i=0;i<10;i++){
+			ctx0.strokeStyle="hsl("+(this.hue)+",100%,"+100*(1-i/10)*(this.size>this.s0?1:this.size/this.s0)*(gradualFade?(2*Math.exp(-this.r*this.r/fadeScale)):1)+"%)";
+			ctx0.beginPath();
+			ctx0.moveTo(this.cx+(this.r-this.size*i)*Math.cos(this.angle),this.cy+(this.r-this.size*i)*Math.sin(this.angle));
+
+			if(this.r-this.size*(i+1) > startR){//won't draw before global startR, regardless of individual randomness
+				ctx0.lineTo(this.cx+(this.r-this.size*(i+1))*Math.cos(this.angle),this.cy+(this.r-this.size*(i+1))*Math.sin(this.angle));
+			}else{
+				ctx0.lineTo(this.cx+startR*Math.cos(this.angle),this.cy+startR*Math.sin(this.angle));
+				i=10;
+			}
+			ctx0.stroke();
+			
+		}
+		if(this.r<this.endR){
+			this.r+=this.speed;
+		}else{
+			if(this.size>0){
+				this.size-=this.speed/10;
+			}else{
+				this.init();
+			}
+		}
+	}
+}
+function update(){
+	particleCount=parseInt(document.getElementById("input1").value);
+	hue=parseInt(document.getElementById("input2").value);
+	hueRandom=parseInt(document.getElementById("input3").value);
+	startR=parseFloat(document.getElementById("input4").value);
+	startRRandom=parseFloat(document.getElementById("input5").value);
+	startSize=parseFloat(document.getElementById("input6").value);
+	startSizeRandom=parseFloat(document.getElementById("input7").value);
+	moveSpeed=parseFloat(document.getElementById("input8").value);
+	moveSpeedRandom=parseFloat(document.getElementById("input9").value);
+	endR=parseFloat(document.getElementById("input10").value);
+	endRRandom=parseFloat(document.getElementById("input11").value);
+}
+
+
+function init(){
+	
+	can0=document.getElementById("can0");
+	ctx0=can0.getContext("2d");
+	
+	can0.addEventListener("mouseup",function(){mouseCoord})	
+	can0.addEventListener("mousemove",mouseCoord);
+	
+	gameinterval = setInterval(frame,1000/fps);
+	
+	reset();
+	
+}
+function reset(){
+	update();
+	particles=[];
+	for(var i=0;i<particleCount;i++){
+		particles.push(new Particle());
+		if(!randomAngle){
+			particles[i].angle=(i/particleCount)*2*Math.PI;
+		}
+		particles[i].init();
+	}
+}
+function mouseCoord(e){
+	mx=e.offsetX;
+	my=e.offsetY;
+	if(followMouse){
+		centerx=mx;
+		centery=my;
+	}
+}
+function frame(){
+	ctx0.clearRect(0,0,can0.width,can0.height);
+	for(var i=0;i<particles.length;i++){
+		particles[i].frame();	
+	}
+}
+
+</script>
+<style>
+canvas{
+display:inline;
+}
+#holder{
+float:right;
+font-size:10pt;
+font-family: helvetica, sans-serif;
+color:white;
+background-color: #333;
+padding:10px;
+width: 380px;
+}
+.name{
+text-align:center;
+}
+</style>
+</head>
+<body bgcolor="#000" onload="init()">
+<canvas height="600" width="600" id="can0"></canvas>
+<div id="holder">
+<table>
+<tr><td></td><td class="name">Base</td><td class="name">Randomness*</td></tr>
+<tr><td>Particle Count</td><td><input id="input1" value="60"</input></td></tr>
+<tr><td>Hue</td><td><input id="input2" value="20"</input></td><td><input id="input3" value="40"</input></td></tr>
+<tr><td>Start Distance</td><td><input id="input4" value="0"</input><td><input id="input5" value="0"</input></td></td></tr>
+<tr><td>Start Length</td><td><input id="input6" value="4"</input></td><td><input id="input7" value="0"</input></tr>
+<tr><td>Speed</td><td><input id="input8" value="2"</input></td><td><input id="input9" value="0"</input></td></tr>
+<tr><td>End Distance</td><td><input id="input10" value="100"</input></td><td><input id="input11" value="20"</input></td></tr>
+<tr><td><button onclick="reset()">Reset</button></td><td><button onclick="update()">Update</button></td></tr>
+
+<tr><td>Rainbow</td><td><input type="checkbox" onchange="rainbow=this.checked"></input></td></tr>
+<tr><td>Random Angle</td><td><input type="checkbox" onchange="randomAngle=this.checked"></input></td></tr>
+
+</table>
+<br>
+*added to (as opposed to centered around) base.
+
+</div>
+</body>
+</html>
